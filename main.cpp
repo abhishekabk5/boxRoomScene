@@ -1,6 +1,7 @@
 
 #include <vector>
 #include <glload/gl_3_3.h>
+#include <GL/freeglut.h>
 #include <../../framework/framework.h>
 
 GLuint theProgram;
@@ -18,14 +19,14 @@ GLuint g_vertexArrayBuffer;
 GLuint g_vertexIndexBuffer;
 GLuint g_vertexArrayObject;
 
-GLfloat g_fVertices[16] = {
+const GLfloat g_fVertices[16] = {
     0.5f, 0.5f, 1.0f, 1.0f,
-    0.5f, -0.5f, 1.0f, 1.0f,
-    -0.5f, 0.5f, 1.0f, 1.0f,
-    -0.5f, -0.5f, 1.0f, 1.0f,
+    0.5f, 1.5f, 1.0f, 1.0f,
+    1.5f, 0.5f, 1.0f, 1.0f,
+    1.5f, 1.5f, 1.0f, 1.0f,
 };
 
-GLshort g_sIndices[6] = {
+const GLshort g_sIndices[6] = {
     0, 1, 2,
     2, 1, 3
 };
@@ -65,15 +66,27 @@ void display() {
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    
+    glUseProgram(theProgram);
+    glBindVertexArray(g_vertexArrayObject);
+
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+
+    glBindVertexArray(0);
+    glUseProgram(0);
+
+    glutSwapBuffers();
 }
 
 void reshape(int w, int h) {
-
+    glViewport(0, 0, (GLsizei) w, (GLsizei) h);
 }
 
 void keyboard(unsigned char key, int x, int y) {
-
+    switch(key) {
+        case 27:
+            glutLeaveMainLoop();
+            return;
+    }
 }
 
 unsigned int defaults(unsigned int displayMode, int &width, int &height) { return displayMode; }
