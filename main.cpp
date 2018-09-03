@@ -20,10 +20,10 @@ GLuint g_vertexIndexBuffer;
 GLuint g_vertexArrayObject;
 
 const GLfloat g_fVertices[] = {
-	0.5f, 0.5f, 0.0f, 1.0f,
-    0.5f, -0.5f, 0.0f, 1.0f,
-    -0.5f, 0.5f, 0.0f, 1.0f,
-    -0.5f, -0.5f, 0.0f, 1.0f,
+	0.5f, 0.5f, 1.5f, 1.0f,
+    0.5f, -0.5f, 1.5f, 1.0f,
+    -0.5f, 0.5f, 1.5f, 1.0f,
+    -0.5f, -0.5f, 1.5f, 1.0f,
 };
 
 const GLshort g_sIndices[] = {
@@ -61,16 +61,29 @@ void init() {
     InitializeProgram();
     InitializeVertexBuffer();
     InitializeVao();
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CW);
+
+    const GLfloat depthZNear = 1.0f;
+    const GLfloat depthZFar = 3.0f;
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LEQUAL);
+    glDepthRange(depthZNear, depthZFar);
+    glEnable(GL_DEPTH_CLAMP);
 }
 
 void display() {
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClearDepth(3.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(theProgram);
     glBindVertexArray(g_vertexArrayObject);
 
-    //glDrawArrays(GL_TRIANGLES, 0, 3);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 
     glBindVertexArray(0);
