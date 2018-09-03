@@ -2,6 +2,10 @@ CPP = g++
 CPP_FLAGS = -c
 RM = rm
 
+ifndef verbose
+	SILENT = @
+endif
+
 DEFINES += -D_CRT_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS -DTIXML_USE_STL -DFREEGLUT_STATIC -DWIN32 -D_LIB -DFREEGLUT_LIB_PRAGMAS=0 -DDEBUG -D_DEBUG
 INCLUDES = -I../../framework -I../../glsdk/glload/include -I../../glsdk/glimg/include -I../../glsdk/glm -I../../glsdk/glutil/include -I../../glsdk/glmesh/include -I../../glsdk/freeglut/include
 
@@ -19,10 +23,11 @@ all: fps.exe
 
 fps.exe: $(OBJS)
 	@echo Linking
-	$(CPP) $^ $(LDFLAGS) -o $@
+	$(SILENT) $(CPP) $^ $(LDFLAGS) -o $@
 
 %.o: %.cpp
-	$(CPP) $(CPP_FLAGS) $^ 
+	$(SILENT) $(CPP) $(CPP_FLAGS) $^ 
 
 clean:
-	@$(RM) %.o
+	@$(RM) *.o
+	@$(RM) fps.exe
