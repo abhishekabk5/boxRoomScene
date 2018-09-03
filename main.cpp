@@ -9,8 +9,8 @@ GLuint theProgram;
 void InitializeProgram() {
     std::vector<GLuint> shaderList;
 
-    shaderList.push_back(Framework::CreateShader(GL_VERTEX_SHADER, "Simple.vert"));
-    shaderList.push_back(Framework::CreateShader(GL_FRAGMENT_SHADER, "Simple.frag"));
+    shaderList.push_back(Framework::LoadShader(GL_VERTEX_SHADER, "Simple.vert"));
+    shaderList.push_back(Framework::LoadShader(GL_FRAGMENT_SHADER, "Simple.frag"));
 
     theProgram = Framework::CreateProgram(shaderList);
 }
@@ -19,14 +19,14 @@ GLuint g_vertexArrayBuffer;
 GLuint g_vertexIndexBuffer;
 GLuint g_vertexArrayObject;
 
-const GLfloat g_fVertices[16] = {
-    0.5f, 0.5f, 1.0f, 1.0f,
-    0.5f, 1.5f, 1.0f, 1.0f,
-    1.5f, 0.5f, 1.0f, 1.0f,
-    1.5f, 1.5f, 1.0f, 1.0f,
+const GLfloat g_fVertices[] = {
+	0.5f, 0.5f, 0.0f, 1.0f,
+    0.5f, -0.5f, 0.0f, 1.0f,
+    -0.5f, 0.5f, 0.0f, 1.0f,
+    -0.5f, -0.5f, 0.0f, 1.0f,
 };
 
-const GLshort g_sIndices[6] = {
+const GLshort g_sIndices[] = {
     0, 1, 2,
     2, 1, 3
 };
@@ -49,6 +49,7 @@ void InitializeVao() {
     glGenVertexArrays(1, &g_vertexArrayObject);
     glBindVertexArray(g_vertexArrayObject);
 
+    glBindBuffer(GL_ARRAY_BUFFER, g_vertexArrayBuffer);
     glBindVertexArray(g_vertexArrayObject);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
@@ -69,11 +70,13 @@ void display() {
     glUseProgram(theProgram);
     glBindVertexArray(g_vertexArrayObject);
 
+    //glDrawArrays(GL_TRIANGLES, 0, 3);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 
     glBindVertexArray(0);
     glUseProgram(0);
 
+    glutPostRedisplay();
     glutSwapBuffers();
 }
 
