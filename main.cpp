@@ -2,9 +2,29 @@
 #include <vector>
 #include <glload/gl_3_3.h>
 #include <GL/freeglut.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <../../framework/framework.h>
 
-GLuint theProgram;
+struct programData {
+    GLuint theProgram;
+    GLuint modelToCameraUniform;
+    GLuint cameraToClipUniform;
+};
+
+programData simple;
+
+inline float CalcFrustumScale(float FOVdeg) {
+    float FOVrad = FOVdeg * 3.14159f / 180.0f;
+    return 1.0f / tan(FOVrad / 2.0f);
+}
+
+const float frustumScale = CalcFrustumScale(45.0f);
+
+const float depthZNear = 1.0f;
+const float depthZFar = 3.0f;
+
+glm::mat4 cameraToClipMatrix;
 
 void InitializeProgram() {
     std::vector<GLuint> shaderList;
@@ -12,7 +32,19 @@ void InitializeProgram() {
     shaderList.push_back(Framework::LoadShader(GL_VERTEX_SHADER, "Simple.vert"));
     shaderList.push_back(Framework::LoadShader(GL_FRAGMENT_SHADER, "Simple.frag"));
 
-    theProgram = Framework::CreateProgram(shaderList);
+    simple.theProgram = Framework::CreateProgram(shaderList);
+
+    cameraToClipMatrix[0].x = frustumScale;
+    cameraToClipMatrix[1].y = frustumScale;
+    cameraToClipMatrix[2].z = (depthZNear + depthZFar) / (depthZNear - depthZFar);
+    cameraToClipMatrix[2].w = -1.0f;
+    cameraToClipMatrix[3].z = (2 * depthZNear * depthZFar) / (depthZNear - depthZFar);
+    
+    glUseProgram(simple.theProgram);
+    simple.modelToCameraUniform = glGetUniformLocation(simple.theProgram, "modelToCamera");
+    simple.cameraToClipUniform = glGetUniformLocation(simple.theProgram, "cameraToClip");
+    glUniformMatrix4fv(simple.cameraToClipUniform, 1, GL_FALSE, glm::value_ptr(cameraToClipMatrix));
+    glUseProgram(0);
 }
 
 GLuint g_vertexArrayBuffer;
@@ -20,10 +52,10 @@ GLuint g_vertexIndexBuffer;
 GLuint g_vertexArrayObject;
 
 const GLfloat g_fVertices[] = {
-	0.5f, 0.5f, 1.5f, 1.0f,
-    0.5f, -0.5f, 1.5f, 1.0f,
-    -0.5f, 0.5f, 1.5f, 1.0f,
-    -0.5f, -0.5f, 1.5f, 1.0f,
+	0.5f, 0.5f, -0.75f, 1.0f,
+    0.5f, -0.5f, 0.75f, 1.0f,
+    -0.5f, 0.5f, -0.75f, 1.0f,
+    -0.5f, -0.5f, 0.75f, 1.0f,
 };
 
 const GLshort g_sIndices[] = {
@@ -66,9 +98,6 @@ void init() {
     glCullFace(GL_BACK);
     glFrontFace(GL_CW);
 
-    const GLfloat depthZNear = 1.0f;
-    const GLfloat depthZFar = 3.0f;
-
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LEQUAL);
@@ -81,11 +110,14 @@ void display() {
     glClearDepth(3.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(theProgram);
+    glUseProgram(simple.theProgram);
     glBindVertexArray(g_vertexArrayObject);
-
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-
+    {
+        glm::mat4 translate(1.0f);
+        translate[3].z = -2.0f;
+        glUniformMatrix4fv(simple.modelToCameraUniform, 1, GL_FALSE, glm::value_ptr(translate));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+    }
     glBindVertexArray(0);
     glUseProgram(0);
 
@@ -94,6 +126,12 @@ void display() {
 }
 
 void reshape(int w, int h) {
+    cameraToClipMatrix[0].x = frustumScale * (h / (float)w);
+
+    glUseProgram(simple.theProgram);
+    glUniformMatrix4fv(simple.cameraToClipUniform, 1, GL_FALSE, glm::value_ptr(cameraToClipMatrix));
+    glUseProgram(0);
+
     glViewport(0, 0, (GLsizei) w, (GLsizei) h);
 }
 
