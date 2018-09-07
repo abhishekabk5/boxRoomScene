@@ -6,5 +6,5 @@ uniform mat4 modelToCamera;
 uniform mat4 cameraToClip;
 
 void main() {
-    gl_Position = modelToCamera * cameraToClip * vec4(position);
+    gl_Position = cameraToClip * modelToCamera * vec4(position);
 }

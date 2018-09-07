@@ -17,7 +17,7 @@ LIBS = $(LDDEPS) -lglloadD -lglimgD -lglutilD -lglmeshD -lfreeglutD -lglu32 -lop
 
 LDFLAGS = $(LIB_DIR) $(LIBS)
 
-OBJS = main.o
+OBJS = main.o fx.o
 
 all: fps.exe
 

@@ -4,7 +4,7 @@
 #include <GL/freeglut.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <../../framework/framework.h>
+#include "fx.h"
 
 struct programData {
     GLuint theProgram;
@@ -22,17 +22,17 @@ inline float CalcFrustumScale(float FOVdeg) {
 const float frustumScale = CalcFrustumScale(45.0f);
 
 const float depthZNear = 1.0f;
-const float depthZFar = 3.0f;
+const float depthZFar = 45.0f;
 
 glm::mat4 cameraToClipMatrix;
 
 void InitializeProgram() {
     std::vector<GLuint> shaderList;
 
-    shaderList.push_back(Framework::LoadShader(GL_VERTEX_SHADER, "Simple.vert"));
-    shaderList.push_back(Framework::LoadShader(GL_FRAGMENT_SHADER, "Simple.frag"));
+    shaderList.push_back(FX::LoadShaderFromFile(GL_VERTEX_SHADER, "data\\Simple.vert"));
+    shaderList.push_back(FX::LoadShaderFromFile(GL_FRAGMENT_SHADER, "data\\Simple.frag"));
 
-    simple.theProgram = Framework::CreateProgram(shaderList);
+    simple.theProgram = FX::CreateProgram(shaderList);
 
     cameraToClipMatrix[0].x = frustumScale;
     cameraToClipMatrix[1].y = frustumScale;
@@ -52,10 +52,10 @@ GLuint g_vertexIndexBuffer;
 GLuint g_vertexArrayObject;
 
 const GLfloat g_fVertices[] = {
-	0.5f, 0.5f, -0.75f, 1.0f,
-    0.5f, -0.5f, 0.75f, 1.0f,
-    -0.5f, 0.5f, -0.75f, 1.0f,
-    -0.5f, -0.5f, 0.75f, 1.0f,
+	5.5f, 5.5f, -5.75f, 1.0f,
+    5.5f, -5.5f, 5.75f, 1.0f,
+    -5.5f, 5.5f, 5.75f, 1.0f,
+    -5.5f, -5.5f, -5.75f, 1.0f,
 };
 
 const GLshort g_sIndices[] = {
@@ -107,14 +107,14 @@ void init() {
 
 void display() {
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClearDepth(3.0f);
+    glClearDepth(45.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(simple.theProgram);
     glBindVertexArray(g_vertexArrayObject);
     {
         glm::mat4 translate(1.0f);
-        translate[3].z = -2.0f;
+        translate[3].z = -20.0f;
         glUniformMatrix4fv(simple.modelToCameraUniform, 1, GL_FALSE, glm::value_ptr(translate));
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
     }
