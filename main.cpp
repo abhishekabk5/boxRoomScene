@@ -1,9 +1,11 @@
 
+#include <iostream>
 #include <vector>
 #include <glload/gl_3_3.h>
 #include <GL/freeglut.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <../../framework/mesh.h>
 #include "fx.h"
 
 struct programData {
@@ -47,52 +49,17 @@ void InitializeProgram() {
     glUseProgram(0);
 }
 
-GLuint g_vertexArrayBuffer;
-GLuint g_vertexIndexBuffer;
-GLuint g_vertexArrayObject;
-
-const GLfloat g_fVertices[] = {
-	5.5f, 5.5f, -5.75f, 1.0f,
-    5.5f, -5.5f, 5.75f, 1.0f,
-    -5.5f, 5.5f, 5.75f, 1.0f,
-    -5.5f, -5.5f, -5.75f, 1.0f,
-};
-
-const GLshort g_sIndices[] = {
-    0, 1, 2,
-    2, 1, 3
-};
-
-void InitializeVertexBuffer() {
-    glGenBuffers(1, &g_vertexArrayBuffer);
-
-    glBindBuffer(GL_ARRAY_BUFFER, g_vertexArrayBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(g_fVertices), g_fVertices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    glGenBuffers(1, &g_vertexIndexBuffer);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_vertexIndexBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(g_sIndices), g_sIndices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-}
-
-void InitializeVao() {
-    glGenVertexArrays(1, &g_vertexArrayObject);
-    glBindVertexArray(g_vertexArrayObject);
-
-    glBindBuffer(GL_ARRAY_BUFFER, g_vertexArrayBuffer);
-    glBindVertexArray(g_vertexArrayObject);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_vertexIndexBuffer);
-    glBindVertexArray(0);
-}
+Framework::Mesh *g_pCubeMesh = NULL;
 
 void init() {
     InitializeProgram();
-    InitializeVertexBuffer();
-    InitializeVao();
+
+    try {
+        g_pCubeMesh = new Framework::Mesh("UnitCube.xml");
+    } catch(std::exception& except) {
+        std::cerr << except.what() << std::endl;
+        throw;
+    }
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
@@ -111,14 +78,12 @@ void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(simple.theProgram);
-    glBindVertexArray(g_vertexArrayObject);
     {
         glm::mat4 translate(1.0f);
         translate[3].z = -20.0f;
         glUniformMatrix4fv(simple.modelToCameraUniform, 1, GL_FALSE, glm::value_ptr(translate));
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+        g_pCubeMesh->Render();
     }
-    glBindVertexArray(0);
     glUseProgram(0);
 
     glutPostRedisplay();
