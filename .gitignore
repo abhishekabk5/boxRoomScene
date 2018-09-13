@@ -1,3 +1,4 @@
 fps.exe
 *.o
 .vscode/launch.json
+.vscode/settings.json
