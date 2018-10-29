@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include <vector>
+#include <cmath>
 #include <glload/gl_3_3.h>
 #include <GL/freeglut.h>
 #include <glm/glm.hpp>
@@ -10,18 +11,16 @@
 
 struct programData {
     GLuint theProgram;
+
+    GLuint lightPosUniform;
+    
     GLuint modelToCameraUniform;
     GLuint cameraToClipUniform;
 };
 
 programData simple;
 
-inline float CalcFrustumScale(float FOVdeg) {
-    float FOVrad = FOVdeg * 3.14159f / 180.0f;
-    return 1.0f / tan(FOVrad / 2.0f);
-}
-
-const float frustumScale = CalcFrustumScale(45.0f);
+const float frustumScale = FX::CalcFrustumScale(45.0f);
 
 const float depthZNear = 0.1f;
 const float depthZFar = 45.0f;
@@ -43,6 +42,7 @@ void InitializeProgram() {
     cameraToClipMatrix[3].z = (2 * depthZNear * depthZFar) / (depthZNear - depthZFar);
     
     glUseProgram(simple.theProgram);
+    simple.lightPosUniform = glGetUniformLocation(simple.theProgram, "lightPos");
     simple.modelToCameraUniform = glGetUniformLocation(simple.theProgram, "modelToCamera");
     simple.cameraToClipUniform = glGetUniformLocation(simple.theProgram, "cameraToClip");
     glUniformMatrix4fv(simple.cameraToClipUniform, 1, GL_FALSE, glm::value_ptr(cameraToClipMatrix));
@@ -56,10 +56,11 @@ const short length = 30;    // z
 const short width = 20;     // x
 const short height = 11;    // y
 
-// Location for first cube that's rendered -------- format: (z, y, x)
-const float baseLocation[3] = { 2.0f - (length - 0.5f), 0.0f + (height / 2.0f - 0.5f), 0.0f - (width / 2.0f - 0.5f) };
+// Location for first cube that's rendered ----
+const glm::vec3 baseLocation(0.0f - (width / 2.0f - 0.5f), 4.0f + (height / 2.0f - 0.5f), 2.0f - (length + 0.5f));
 
-bool sceneMatrix[length][height][width]/* = {
+// 3D Matrix describing the Scene ----
+bool sceneMatrix[length][height][width] = {
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -70,18 +71,6 @@ bool sceneMatrix[length][height][width]/* = {
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -409,6 +398,17 @@ bool sceneMatrix[length][height][width]/* = {
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -419,17 +419,49 @@ bool sceneMatrix[length][height][width]/* = {
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-}*/;
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+};
+
+FX::Timer g_timer(5.0f);
+
+class Light {
+public:
+    Light() {};
+    Light(glm::vec4& basePosition, float loopRadius): basePos(basePosition), radius(loopRadius) {};
+
+    void setBasePosition(glm::vec4& position) { basePos = position; }
+    void setLoopRadius(float loopRadius) { radius = loopRadius; }
+
+    glm::vec3 calcLightPos() {
+        float posAngle = g_timer.getAlpha() * (3.14159f * 2.0f);
+
+        glm::vec3 ans;
+        ans.y = basePos.y;
+        ans.x = basePos.x + cosf(posAngle) * radius;
+        ans.z = basePos.z + sinf(posAngle) * radius;
+        
+        return ans;
+    }
+
+private:
+    glm::vec4 basePos;
+    float radius;
+};
+
+Light g_light;
 
 void InitialiseScene() {
-    for(int k = 0; k < length; k++) {
+    /*for(int k = 0; k < length; k++) {
         for(int j = 0; j < height; j++) {
             for(int i = 0; i < width; i++) {
                 if(k == 0 || k == length-1 || j == 0 || j == height-1 || i == 0 || i == width-1)
                     sceneMatrix[k][j][i] = true;
             }
         }
-    }
+    }*/
+    glm::vec4 base((baseLocation + glm::vec3(width / 2.0f, height / -2.0f, length / -2.0f)), 1.0f);
+    g_light.setBasePosition(base);
+    g_light.setLoopRadius(5.0f);
 
     return;
 }
@@ -459,30 +491,30 @@ void init() {
     return;
 }
 
-void DisplayScene() {
+void DisplayScene(glm::mat4 base) {
     glUseProgram(simple.theProgram);
-    {
-        glm::mat4 translate(1.0f);
-        translate[3].z = baseLocation[0];
+    
+    glm::vec3 translate(0.0f);
+    
+    for(int k = 0; k < length; k++, translate.z += 1.0f) {
+        translate.y = 0.0f;
         
-        for(int k = 0; k < length; k++, translate[3].z += 1.0f) {
-            translate[3].y = baseLocation[1];
+        for(int j = 0; j < height; j++, translate.y -= 1.0f) {
+            translate.x = 0.0f;
             
-            for(int j = 0; j < height; j++, translate[3].y -= 1.0f) {
-                translate[3].x = baseLocation[2];
-                
-                for(int i = 0; i < width; i++, translate[3].x += 1.0f) {
-                    if(sceneMatrix[k][j][i]) {
-                        glUniformMatrix4fv(simple.modelToCameraUniform, 1, GL_FALSE, glm::value_ptr(translate));
-                        g_pCubeMesh->Render();
-                    }
+            for(int i = 0; i < width; i++, translate.x += 1.0f) {
+                if(sceneMatrix[k][j][i]) {
+                    glUniformMatrix4fv(simple.modelToCameraUniform, 1, GL_FALSE,
+                                glm::value_ptr(glm::mat4(base * FX::Translate(translate))));
+                    g_pCubeMesh->Render();
                 }
             }
         }
-
-        /*glm::mat4 translate(1.0f);
-        translate[3].z = -1.0;*/
     }
+
+    /*glm::mat4 translate(1.0f);
+    translate[3].z = -1.0;*/
+    
     glUseProgram(0);
 
     return;
@@ -493,7 +525,19 @@ void display() {
     glClearDepth(45.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    DisplayScene();
+    g_timer.Update();
+
+    {
+        glm::vec3 lightPos = g_light.calcLightPos();
+        glUseProgram(simple.theProgram);
+        glUniform4f(simple.lightPosUniform, lightPos.x, lightPos.y, lightPos.z, 0.0f);
+        glUseProgram(0);
+    }
+
+    glm::mat4 baseMatrix(1.0f);
+    baseMatrix *= FX::Translate(glm::vec3(baseLocation));
+
+    DisplayScene(baseMatrix);
 
     glutPostRedisplay();
     glutSwapBuffers();
