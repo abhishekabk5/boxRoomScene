@@ -57,7 +57,7 @@ const short width = 20;     // x
 const short height = 11;    // y
 
 // Location for first cube that's rendered ----
-const glm::vec3 baseLocation(0.0f - (width / 2.0f - 0.5f), 4.0f + (height / 2.0f - 0.5f), 2.0f - (length + 0.5f));
+const glm::vec3 baseLocation(0.0f - (width / 2.0f - 0.5f), 4.0f + (height / 2.0f - 0.5f), 3.0f - (length + 0.5f));
 
 // 3D Matrix describing the Scene ----
 bool sceneMatrix[length][height][width] = {
@@ -422,7 +422,7 @@ bool sceneMatrix[length][height][width] = {
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 };
 
-FX::Timer g_timer(5.0f);
+//FX::Timer g_timer(5.0f);
 
 class Light {
 public:
@@ -433,7 +433,8 @@ public:
     void setLoopRadius(float loopRadius) { radius = loopRadius; }
 
     glm::vec3 calcLightPos() {
-        float posAngle = g_timer.getAlpha() * (3.14159f * 2.0f);
+        float alpha = fmodf(glutGet(GLUT_ELAPSED_TIME) / 1000.0f, 5.0f);
+        float posAngle = alpha * (3.14159f * 2.0f);
 
         glm::vec3 ans;
         ans.y = basePos.y;
@@ -449,6 +450,7 @@ private:
 };
 
 Light g_light;
+glm::vec3 lightPos;
 
 void InitialiseScene() {
     /*for(int k = 0; k < length; k++) {
@@ -521,14 +523,14 @@ void DisplayScene(glm::mat4 base) {
 }
 
 void display() {
+    //g_timer.Update();
+    
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClearDepth(45.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    g_timer.Update();
-
     {
-        glm::vec3 lightPos = g_light.calcLightPos();
+        lightPos = g_light.calcLightPos();
         glUseProgram(simple.theProgram);
         glUniform4f(simple.lightPosUniform, lightPos.x, lightPos.y, lightPos.z, 0.0f);
         glUseProgram(0);
@@ -572,7 +574,7 @@ void keyboard(unsigned char key, int x, int y) {
                 }
                 std::cout << std::endl;
             }
-            break;        
+            break;       
     }
 
     return;
